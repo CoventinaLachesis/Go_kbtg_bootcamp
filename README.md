@@ -1,6 +1,36 @@
-# K-Tax โปรแกรมคำนวนภาษี
+# สารภาพบาป
+ติดสอบปลายภาคจนไม่มีเวลาทำเลยครับ เลยขอส่งแค่ส่วนที่พอจะทำได้แบบไวๆไปก่อนเลยแล้วกันครับ
+//ขอตัวไปอ่านหนังสือสอบต่อ <( _ _ )>
 
+
+# K-Tax โปรแกรมคำนวนภาษี
 K-Tax เป็น Application คำนวนภาษี ที่ให้ผู้ใช้งานสามารถคำนวนภาษีบุคคลธรรมดา ตามขั้นบันใดภาษี พร้อมกับคำนวนค่าลดหย่อน และภาษีที่ต้องได้รับคืน
+
+## Objective
+
+### tax-calculations  
+
+1.รับจาก request จาก /tax/calculations ✅  
+2.ใช้ wht ได้ ✅  
+3.มี tax level ✅  
+4.มี tax refund ✅  
+5.อ่านข้อมูลจากไฟล์ csv  ❌  
+6.อ่าน ค่าลดหย่อน จาก Database ❌  
+7.ทำ test file ✅  
+
+### Admin
+
+1.เชื่อมData base จาก docker compose ✅  
+2.ทำAuth admin ❌  
+3.เปลี่ยนแปลง allowance ❌  
+
+### General
+
+1.ดึง Variable จาก Env ✅  
+2.ทำ Graceful shutdown ✅  
+3.ทำ Docker  multi stag build ❌  
+
+
 
 ## Getting Started
 
