@@ -3,12 +3,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	_ "github.com/lib/pq"
 )
 
 // Constants for maximum allowance limits
@@ -45,7 +50,36 @@ type CalculationResponse struct {
 }
 
 type RefundResponse struct {
-	RefundTax float64 `json:"taxRefund"`
+	RefundTax string `json:"taxRefund"`
+}
+
+func formatLevel(min, max float64) string {
+	if max == 1e12 {
+		return fmt.Sprintf("%s or more", formatNumber(min))
+	}
+	return fmt.Sprintf("%s - %s", formatNumber(min), formatNumber(max))
+}
+
+// formatNumber formats a number with commas
+func formatNumber(num float64) string {
+	// Convert float64 to string
+	str := strconv.FormatFloat(num, 'f', -1, 64)
+	// Split integer part and decimal part
+	parts := strings.Split(str, ".")
+	integerPart := parts[0]
+	// Add commas to integer part
+	var formattedNumber string
+	for i, c := range integerPart {
+		if i > 0 && (len(integerPart)-i)%3 == 0 {
+			formattedNumber += ","
+		}
+		formattedNumber += string(c)
+	}
+	// Add decimal part back if present
+	if len(parts) > 1 {
+		formattedNumber += "." + parts[1]
+	}
+	return formattedNumber
 }
 
 func calculateTaxHandler(c echo.Context) error {
@@ -105,8 +139,9 @@ func calculateTaxHandler(c echo.Context) error {
 			}
 			totalTax += bracketTax
 		}
+		level := formatLevel(bracket.MinIncome, bracket.MaxIncome)
 		taxLevels = append(taxLevels, TaxLevel{
-			Level: fmt.Sprintf("%.0f-%.0f", bracket.MinIncome, bracket.MaxIncome),
+			Level: level,
 			Tax:   bracketTax,
 		})
 	}
@@ -116,27 +151,43 @@ func calculateTaxHandler(c echo.Context) error {
 		totalTax = 0
 	}
 
-	response := CalculationResponse{
-		Tax:      totalTax,
-		TaxLevel: taxLevels,
-	}
-
 	// Apply withholding tax
 	if totalTax < request.WHT {
 		taxRefund := request.WHT - totalTax
 		response := RefundResponse{
-			RefundTax: taxRefund,
+			RefundTax: formatNumber(taxRefund),
 		}
 		return c.JSON(http.StatusOK, response)
 
 	}
 
+	totalTax -= request.WHT
+	response := CalculationResponse{
+		Tax:      totalTax,
+		TaxLevel: taxLevels,
+	}
 	return c.JSON(http.StatusOK, response)
 }
 func main() {
 	port := os.Getenv("PORT")
+	db_url := os.Getenv("DATABASE_URL")
+
 	//admin_user := os.Getenv("ADMIN_USER")
 	//admin_pass := os.Getenv("ADMIN_PASS")
+
+	//database
+	db, err := sql.Open("postgres", db_url)
+	if err != nil {
+		log.Fatal("Error connecting to the database:", err)
+	}
+	defer db.Close()
+
+	// Verify the database connection
+	err = db.Ping()
+	if err != nil {
+		log.Fatal("Error pinging the database:", err)
+	}
+	fmt.Println("Connected to the database")
 	e := echo.New()
 
 	// Middleware
