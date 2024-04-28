@@ -19,6 +19,32 @@ func TestCalculateTaxHandler(t *testing.T) {
 		expected CalculationResponse
 	}{
 		{
+			name: "Example 4",
+			request: CalculationRequest{
+				TotalIncome: 500000.0,
+				WHT:         0.0,
+				Allowances: []struct {
+					AllowanceType string  `json:"allowanceType"`
+					Amount        float64 `json:"amount"`
+				}{
+					{
+						AllowanceType: "donation",
+						Amount:        200000.0,
+					},
+				},
+			},
+			expected: CalculationResponse{
+				Tax: 19000.0,
+				TaxLevel: []TaxLevel{
+					{Level: "0 - 150,000", Tax: 0.0},
+					{Level: "150,001 - 500,000", Tax: 19000.0},
+					{Level: "500,001 - 1,000,000", Tax: 0.0},
+					{Level: "1,000,001 - 2,000,000", Tax: 0.0},
+					{Level: "2,000,001 or more", Tax: 0.0},
+				},
+			},
+		},
+		{
 			name: "Example 7",
 			request: CalculationRequest{
 				TotalIncome: 500000.0,

@@ -18,8 +18,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// Constants for maximum allowance limits
-const (
+// for maximum allowance limits
+var (
 	maxDonationAllowance = 100000.0
 
 	currentPersonalAllowance = 60000.0
@@ -62,7 +62,7 @@ func formatLevel(min, max float64) string {
 	return fmt.Sprintf("%s - %s", formatNumber(min), formatNumber(max))
 }
 
-// formatNumber formats a number with commas
+// formats a number with commas
 func formatNumber(num float64) string {
 	// Convert float64 to string
 	str := strconv.FormatFloat(num, 'f', -1, 64)
