@@ -15,7 +15,6 @@ import (
 	"syscall"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 )
 
@@ -23,10 +22,10 @@ import (
 const (
 	maxDonationAllowance = 100000.0
 
-	defaultPersonalAllowance = 60000.0
+	currentPersonalAllowance = 60000.0
 	maxPersonalAllowance     = 100000.0
 
-	defaultMaxKReceipt = 50000.0
+	currentMaxKReceipt = 50000.0
 	maxAdminKReceipt   = 100000.0
 
 	minPersonalAllowance = 10000.0
@@ -100,8 +99,8 @@ func calculateTaxHandler(c echo.Context) error {
 				request.Allowances[i].Amount = maxDonationAllowance
 			}
 		case "k-receipt":
-			if allowance.Amount > defaultMaxKReceipt {
-				request.Allowances[i].Amount = defaultMaxKReceipt
+			if allowance.Amount > currentMaxKReceipt {
+				request.Allowances[i].Amount = currentMaxKReceipt
 			}
 		default:
 			request.Allowances[i].Amount = 0
@@ -113,7 +112,7 @@ func calculateTaxHandler(c echo.Context) error {
 		taxableIncome -= allowance.Amount
 
 	}
-	taxableIncome -= defaultPersonalAllowance
+	taxableIncome -= currentPersonalAllowance
 
 	// Define tax brackets
 	taxBrackets := []struct {
@@ -125,7 +124,7 @@ func calculateTaxHandler(c echo.Context) error {
 		{150001, 500000, 0.1},
 		{500001, 1000000, 0.15},
 		{1000001, 2000000, 0.20},
-		{2000001, 1e12, 0.35}, // arbitrarily large value to represent infinity
+		{2000001, 1e12, 0.35}, // 1e12 large value to represent infinity
 	}
 
 	// Calculate tax based on tax brackets
@@ -142,6 +141,8 @@ func calculateTaxHandler(c echo.Context) error {
 			}
 			totalTax += bracketTax
 		}
+
+		//Add to response
 		level := formatLevel(bracket.MinIncome, bracket.MaxIncome)
 		taxLevels = append(taxLevels, TaxLevel{
 			Level: level,
@@ -191,12 +192,8 @@ func main() {
 		log.Fatal("Error pinging the database:", err)
 	}
 	fmt.Println("Connected to the database")
+
 	e := echo.New()
-
-	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
 	// Routes
 	e.POST("/tax/calculations", calculateTaxHandler)
 
