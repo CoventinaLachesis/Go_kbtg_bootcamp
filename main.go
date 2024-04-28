@@ -3,13 +3,16 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -197,7 +200,31 @@ func main() {
 	// Routes
 	e.POST("/tax/calculations", calculateTaxHandler)
 
-	// Start server
+	// Start the server in a separate goroutine
+	go func() {
+		if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatalf("failed to start server: %v", err)
+		}
+	}()
 
-	e.Logger.Fatal(e.Start(":" + port))
+	fmt.Println("Server is running on port ", port)
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	// Print shutting down message
+	fmt.Println("Shutting down the server...")
+
+	// Create a context with timeout 10 seconds
+	ctx, cancel := context.WithTimeout(context.Background(), 10)
+	defer cancel()
+
+	// Shutdown the server
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
+
+	e.Logger.Info("Server stopped")
 }
